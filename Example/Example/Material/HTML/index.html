@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css/github-markdown.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --base-font-size: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .list {
+            font-size: var(--base-font-size);
+            max-height: 0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+        }
+
+        .list.show {
+            max-height: 500px;
+            margin: 10px 0;
+            padding: 10px 20px;
+        }
+
+        .list li {
+            color: #ffffff;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            list-style-position: inside;
+        }
+
+        .list li:last-child {
+            border-bottom: none;
+        }
+
+        .list li:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding-left: 10px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .message-bubble {
+            max-width: 95%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message-content {
+            font-size: var(--base-font-size);
+            color: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            word-wrap: break-word;
+        }
+
+        .user {
+            align-items: flex-end;
+        }
+
+        .user .avatar-container {
+            flex-direction: row;
+        }
+
+        .user .avatar-label {
+            margin-right: 0;
+            margin-left: 8px;
+        }
+
+        .user .message-time {
+            font-size: calc(var(--base-font-size) * 0.7);
+            color: #999;
+            margin-top: 5px;
+            align-self: flex-end;
+        }
+
+        .user .message-content {
+            background-color: #00000099;
+        }
+
+        .bot {
+            align-items: flex-start;
+        }
+
+        .bot .avatar-container {
+            flex-direction: row-reverse;
+        }
+
+        .bot .message-content {
+            background-color: #00000099;
+        }
+
+        .bot .message-time {
+            font-size: calc(var(--base-font-size) * 0.7);
+            color: #999;
+            margin-top: 5px;
+            align-self: flex-start;
+        }
+
+        .avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .avatar-label {
+            color: #fff;
+            font-weight: bold;
+            font-size: 24px;
+            margin-right: 4px;
+        }
+
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .dots {
+            display: inline-block;
+        }
+
+        .dot {
+            opacity: 0;
+            animation: typingDot 1.5s infinite;
+            display: inline-block;
+        }
+
+        .dot:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .dot:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        .dot:nth-child(4) {
+            animation-delay: 0.9s;
+        }
+
+        .dot:nth-child(5) {
+            animation-delay: 1.2s;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            opacity: inherit;
+            vertical-align: middle;
+        }
+
+        #pullToRefresh {
+            text-align: center;
+            height: 0;
+            overflow: hidden;
+            color: #fff;
+            transition: all 0.3s ease-out;
+            position: relative;
+            padding: 10px;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #pullToRefresh.visible {
+            height: 50px;
+            opacity: 1;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes typingDot {
+            0% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+
+    <script>
+
+        /**
+         * [滑動更新功能](https://ithelp.ithome.com.tw/articles/10197335)
+         */
+        touchEventHandler = () => {
+
+            let isRefreshing = false
+            let touchStartY = 0
+            let touchEndY = 0
+
+            /**
+            * 取得觸碰的開始Y座標
+            * @param {TouchEvent} event - 點擊事件
+            */
+            _touchStartAction_ = (event) => {
+                if (isRefreshing) { return }
+                touchStartY = event.touches[0].clientY
+            }
+
+            /**
+            * 觸碰移動Y座標的事件處理 (只有在頂部才會出現提示)
+            * @param {TouchEvent} event - 點擊事件
+            */
+            _touchMoveAction_ = (event) => {
+
+                if (isRefreshing) { return }
+
+                touchEndY = event.touches[0].clientY;
+                const distance = touchEndY - touchStartY;
+
+                if (window.scrollY === 0 && distance > 0) {
+
+                    pullToRefresh.classList.add('visible')
+                    event.preventDefault()
+
+                    if (distance < 50) { return }
+                    if (!window.webkit?.messageHandlers?.menuAction) { return }
+
+                    const message = { type: 'pullToRefresh', distance: `${distance}` }
+                    isRefreshing = true
+
+                    window.webkit.messageHandlers.menuAction.postMessage(message)
+                }
+            }
+
+            /**
+            * 觸碰移動結束時 (隱藏提示)
+            * @param {TouchEvent} event - 點擊事件
+            */
+            _touchEndAction_ = () => {
+
+                if (pullToRefresh.classList.contains('visible')) {
+                    pullToRefresh.classList.remove('visible')
+                }
+
+                isRefreshing = false
+                touchStartY = 0
+                touchEndY = 0
+            }
+
+            document.addEventListener('touchstart', (event) => { _touchStartAction_(event) })
+            document.addEventListener('touchmove', (event) => { _touchMoveAction_(event) })
+            document.addEventListener('touchend', () => { _touchEndAction_() })
+        }
+
+        /**
+        * Base64文字解碼
+        * @param {string} base64Encoded - Base64編碼文字
+        */
+        decodedBase64Text = (base64Encoded) => {
+            const decodedText = decodeURIComponent(escape(atob(base64Encoded)))
+            return decodedText
+        }
+
+        /**
+        * 產生當Key值用的MessageId
+        * @param {number} timestamp - 建立時的時間戳記 (ms)
+        */
+        messageIdMaker = (timestamp) => {
+            const id = `message-${timestamp}`
+            return id
+        }
+
+        /**
+        * 加上點擊功能
+        * @param {number} timestamp - 建立時的時間戳記 (ms)
+        */
+        addClickListener = (timestamp) => {
+
+            const messageId = messageIdMaker(timestamp)
+            const element = document.getElementById(messageId)
+
+            element.addEventListener('click', function (event) {
+
+                const list = this.parentNode.querySelector('.list')
+                const indices = this.dataset.indices
+                const array = JSON.parse(indices)
+
+                if (array.length === 0) { return }
+                if (!window.webkit?.messageHandlers?.menuAction) { return }
+
+                const message = { timestamp: timestamp, type: 'menuClickAction', indices: array }
+                window.webkit.messageHandlers.menuAction.postMessage(message)
+            })
+        }
+
+        /**
+        * 為頭像容器添加點擊事件
+        * @param {number} timestamp - 建立時的時間戳記 (ms)
+        */
+        function addAvatarClickListener(timestamp) {
+
+            const messageId = messageIdMaker(timestamp)
+
+            if (!document.getElementById(messageId)) { return }
+            if (!window.speechSynthesis) { return }
+
+            const message = document.getElementById(messageId)
+            const avatarContainer = message.closest('.message').querySelector('.avatar-container')
+
+            avatarContainer.addEventListener('click', () => {
+
+                const content = message.textContent
+                const list = message.closest('.message').querySelector('.list')
+                
+                let menuItems = ''
+
+                if (list) {
+
+                    const items = Array.from(list.getElementsByTagName('li'))
+                    let listArray = []
+
+                    items.forEach((item, index, array) => {
+                        const option = `${index + 1}. ${item.textContent}`
+                        listArray.push(option)
+                    })
+
+                    if (items.length > 0) { menuItems = '，選單選項：' + listArray.join('，') }
+                }
+
+                speakText(content + menuItems, 'zh-TW', 1.0, 1.0)
+            })
+        }
+
+        /**
+        * [唸出文字內容](https://ithelp.ithome.com.tw/m/articles/10305630)
+        * @param {string} text - 要唸出的文字
+        * @param {string} lang - 語言代碼 (預設:'zh-TW')
+        * @param {number} rate - 語速 (0.1 到 10.0)
+        * @param {number} pitch - 音調 (0 到 2)
+        */
+        function speakText(text, lang = 'zh-TW', rate = 1.0, pitch = 1.0) {
+
+            if (!window.speechSynthesis || !text) { return }
+            if (typeof text !== 'string') { return }
+
+            const utterance = new SpeechSynthesisUtterance(text)
+            utterance.voice = speechSynthesis.getVoices().find(voice => voice.lang === lang) || speechSynthesis.getVoices()[0]
+
+            if (!utterance.voice) { return }
+
+            utterance.lang = lang
+            utterance.text = text
+            utterance.rate = rate
+            utterance.pitch = pitch
+
+            speechSynthesis.speak(utterance)
+        }
+
+        /**
+         * [滾到最頂部](https://ithelp.ithome.com.tw/articles/10273294)
+         */
+        scrollToTop = () => {
+
+            window.scrollTo({
+                top: 0,
+                behavior: 'instant'
+            })
+        }
+
+        /**
+         * [滾到最低部](https://developer.mozilla.org/zh-CN/docs/Web/API/Window/scrollTo)
+         */
+        scrollToBottom = () => {
+
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'instant'
+            })
+        }
+
+        /**
+         * [取得CSS變數的值，通常用於動態調整樣式](https://developer.mozilla.org/zh-TW/docs/Web/API/Window/getComputedStyle)
+         * @returns {string} CSS屬性值 (例如: '20px')
+         */
+        function propertyValue(key) {
+            return getComputedStyle(document.documentElement).getPropertyValue(key).trim()
+        }
+
+        /**
+         * 顯示BOT回傳的文字 (時間戳記當Id用)
+         * @param {string} base64Encoded - 編譯成base64的回傳文字
+         * @param {number} timestamp - 時間戳記 (ms)
+         */
+        window.displayMarkdown = (base64Encoded, timestamp) => {
+
+            const messageId = messageIdMaker(timestamp)
+            const decodedText = decodedBase64Text(base64Encoded)
+            const html = marked.parse(decodedText)
+            const div = document.getElementById(messageId)
+
+            div.innerHTML = html
+            window.scrollToBottom()
+        }
+
+        /**
+         * 加入角色 + 初始對話框文字 (時間戳記當Id用)
+         * @param {string} role - 角色類型 (user / bot)
+         * @param {string} name - 角色名稱
+         * @param {string} base64Encoded - Base64編碼文字
+         * @returns {number} 建立時的時間戳記 (ms)
+         */
+        window.appendRole = (role, name, base64Encoded, indices) => {
+
+            const decodedText = decodedBase64Text(base64Encoded)
+            const container = document.getElementById('container')
+            const timestamp = Date.now()
+            const localTimeString = new Date(timestamp).toLocaleString()
+            const messageId = messageIdMaker(timestamp)
+
+            let innerMessage = `
+            <span class="dots">
+                <span class="dot">.</span>
+                <span class="dot">.</span>
+                <span class="dot">.</span>
+                <span class="dot">.</span>
+                <span class="dot">.</span>
+            </span>`
+
+            let promptMenu = ''
+
+            if (base64Encoded.length != 0) { innerMessage = decodedText }
+            if (role === 'bot') { promptMenu = `<div><ol class="list hidden"></ol></div>` }
+
+            const divHtml = `
+            <div class="message ${role}">
+                <div class="avatar-container">
+                    <span class="avatar-label">${name}</span>
+                    <div class="avatar">
+                        <img src="${role}.png" alt="${role}">
+                    </div>
+                </div>
+                <div class="message-bubble">
+                    <div id="${messageId}" class="message-content markdown-body" data-indices="${indices}">${innerMessage}</div>
+                    ${promptMenu}
+                    <div class="message-time">${localTimeString}</div>
+                </div>
+            </div>
+            `
+
+            container.insertAdjacentHTML('beforeend', divHtml)
+
+            addClickListener(timestamp)
+            addAvatarClickListener(timestamp)
+
+            window.scrollToBottom()
+
+            return { "timestamp": timestamp }
+        }
+
+        /**
+         * [回復角色 + 對話框文字 (時間戳記當Id用)](https://medium.com/@egg8833/js-筆記-insertadjacenthtml-比innerhtml好用且快速的方法-f2f74a874575)
+         * @param {string} role - 角色 (user / bot)
+         * @param {number} message - 初始對話框文字
+         * @param {number} timestamp - 建立時的時間戳記 (ms)
+         * @param {string} indices - 補充選單Index字串
+         * @param {bool} isTop - 是否要滾到最上方
+        */
+        window.restoreRole = (role, name, base64Encoded, timestamp, indices, isTop) => {
+
+            const messageId = messageIdMaker(timestamp)
+            const decodedText = decodedBase64Text(base64Encoded)
+            const container = document.getElementById('container')
+            const localTimeString = new Date(timestamp).toLocaleString()
+            const innerMessage = (role === 'bot') ? marked.parse(decodedText) : decodedText
+
+            if (role === 'bot') { promptMenu = `<div><ol class="list hidden"></ol></div>` }
+
+            const divHtml = `
+            <div class="message ${role}">
+                <div class="avatar-container">
+                    <span class="avatar-label">${name}</span>
+                    <div class="avatar">
+                        <img src="${role}.png" alt="${role}">
+                    </div>
+                </div>
+                <div class="message-bubble">
+                    <div id="${messageId}" class="message-content markdown-body" data-indices="${indices}">${innerMessage}</div>
+                    ${promptMenu}
+                    <div class="message-time">${localTimeString}</div>
+                </div>
+            </div>
+            `
+
+            container.insertAdjacentHTML('afterbegin', divHtml)
+
+            addClickListener(timestamp)
+            addAvatarClickListener(timestamp)
+
+            isTop ? window.scrollToTop() : window.scrollToBottom()
+        }
+
+        /**
+         * [取得畫面上對話框的數量](https://developer.mozilla.org/zh-TW/docs/Web/API/Document/getElementsByClassName)
+         */
+        window.messageCount = () => {
+            const messages = document.getElementsByClassName('message')
+            return messages.length
+        }
+
+        /**
+         * 移除最後一個Bot對話框 + 動畫
+         * @returns {bool} 是否成功
+         */
+        window.removeLastBot = () => {
+
+            const elements = document.getElementsByClassName('bot')
+            if (elements.length == 0) { return false }
+
+            const lastElement = elements[elements.length - 1]
+
+            lastElement.classList.add('fade-out');
+
+            lastElement.addEventListener('transitionend', function () {
+                if (lastElement.parentNode) { lastElement.parentNode.removeChild(lastElement) }
+            })
+
+            return true
+        }
+
+        /**
+         * [滾到特定的Id位置](https://blog.darkthread.net/blog/js-scrollintoview/)
+         * @param {number} timestamp - 建立時的時間戳記 (ms)
+         * @param {number} fixHeight - 高度修正
+         */
+        window.scrollToMessageId = (timestamp, fixHeight) => {
+
+            const messageId = messageIdMaker(timestamp)
+            const element = document.getElementById(messageId)
+
+            element.scrollIntoView({ behavior: 'instant', block: 'start', inline: "nearest" })
+            window.scrollBy({ top: fixHeight, left: 0, behavior: 'instant' })
+
+            return messageId
+        }
+
+        /**
+        * 測試是否有選單項目內容
+        * @param {number} timestamp - 建立時的時間戳記 (ms)
+        */
+        window.messageListItemsExists = (timestamp) => {
+
+            const messageId = messageIdMaker(timestamp)
+            const element = document.getElementById(messageId)
+            const list = element.closest('.message').querySelector('.list')
+
+            if (!list || list.children.length > 0) { return true }
+            return false
+        }
+
+        /**
+        * 添加選單項目 (有內容就不加項目)
+        * @param {number} timestamp - 建立時的時間戳記 (ms)
+        * @param {Array<{text: string, prompt: string}>} items - 選單項目陣列
+        * @param {string} items[].text - 顯示的文字
+        * @param {string} items[].prompt - 點擊時傳送的提示文字
+        * @example
+        * appendMenu(1234567890, [{ user_q: "選項1", gpt_q: "這是選項1的提示文字" }])
+        */
+        window.appendMenu = (timestamp, items) => {
+
+            const messageId = messageIdMaker(timestamp)
+            const element = document.getElementById(messageId)
+            const list = element.closest('.message').querySelector('.list')
+
+            if (window.messageListItemsExists(timestamp)) { return false }
+
+            if (list) {
+                list.classList.toggle('show')
+                list.classList.toggle('hidden')
+            }
+
+            items.forEach((item) => {
+
+                const li = document.createElement('li');
+
+                li.textContent = item.user_q
+                li.setAttribute('data-menu-prompt', item.gpt_q)
+                li.addEventListener('click', function (event) {
+
+                    const prompt = this.dataset.menuPrompt
+                    event.stopPropagation()
+
+                    if (!window.webkit?.messageHandlers?.menuAction) { return }
+
+                    const message = { type: 'menuPromptAction', prompt: prompt }
+                    window.webkit.messageHandlers.menuAction.postMessage(message)
+                })
+
+                list.appendChild(li)
+            })
+
+            return true
+        }
+
+        /**
+        * 調整畫面文字大小
+        * @param {number} size
+        */
+        window.fontSizeSetting = (size) => {
+            document.documentElement.style.setProperty('--base-font-size', `${size}px`);
+        }
+
+        /**
+         * 取得CSS變數--base-font-size的值 (字型大小)
+         * @param {number} fontSize
+         */
+        window.currentFontSize = () => {
+            const fontSize = propertyValue('--base-font-size')
+            return parseFloat(fontSize.replace('px', ''))
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('load', touchEventHandler())
+        } else {
+            touchEventHandler()
+        }
+    </script>
+
+    <title>BOT聊天室</title>
+</head>
+
+<body>
+    <div class="option"></div>
+    <div id="pullToRefresh"><span class="spinner"></span>下拉更新...</div>
+    <div id="container"></div>
+</body>
+
+</html>

@@ -1,0 +1,8 @@
+flask
+pandas
+requests
+numpy
+rich
+pymongo
+redis
+sqlite3

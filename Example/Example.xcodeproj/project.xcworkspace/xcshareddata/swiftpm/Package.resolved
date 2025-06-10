@@ -1,0 +1,78 @@
+{
+  "originHash" : "7856be1bbbb36088495e4c9b10ed9d560f7c9363a7e7bcf40b75c1dc98674b5f",
+  "pins" : [
+    {
+      "identity" : "wweventsource",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/William-Weng/WWEventSource",
+      "state" : {
+        "revision" : "6ea3d939a84cea2391098d9519e4fca0efd7bb13",
+        "version" : "1.4.1"
+      }
+    },
+    {
+      "identity" : "wwexpandabletextview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/William-Weng/WWExpandableTextView",
+      "state" : {
+        "revision" : "8fb7db74d9b3e5faf9dbb790444dc0f4ba527968",
+        "version" : "1.0.3"
+      }
+    },
+    {
+      "identity" : "wwhud",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/William-Weng/WWHUD",
+      "state" : {
+        "revision" : "b8db2cdf70698c073842df293cfe0946ca0690d5",
+        "version" : "1.3.3"
+      }
+    },
+    {
+      "identity" : "wwkeyboardshadowview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/William-Weng/WWKeyboardShadowView",
+      "state" : {
+        "revision" : "3fee0dfdaae1be49d694c8390598be49a588b27c",
+        "version" : "1.1.3"
+      }
+    },
+    {
+      "identity" : "wwnetworking",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/William-Weng/WWNetworking",
+      "state" : {
+        "revision" : "77b572ec57cddb9c24dfb42c4bfa56fda98269ac",
+        "version" : "1.7.6"
+      }
+    },
+    {
+      "identity" : "wwprint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/William-Weng/WWPrint",
+      "state" : {
+        "revision" : "8f5928f5d36624d77f8fc563fd8e31a59cfac6b6",
+        "version" : "1.3.1"
+      }
+    },
+    {
+      "identity" : "wwregularexpression",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/William-Weng/WWRegularExpression",
+      "state" : {
+        "revision" : "5bc5c03259ed28b4c5c6899458fde6ac4d665794",
+        "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "wwsidemenuviewcontroller",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/William-Weng/WWSideMenuViewController",
+      "state" : {
+        "revision" : "3f4c6a3ac8b2b0bc24510974da3efa2e33a38f0e",
+        "version" : "1.5.0"
+      }
+    }
+  ],
+  "version" : 3
+}
